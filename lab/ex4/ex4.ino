@@ -1,7 +1,3 @@
-/* 
-
-*/
-
 
 #if CONFIG_FREERTOS_UNICORE
 #define ARDUINO_RUNNING_CORE 0
@@ -15,48 +11,49 @@
   #define LED_BUILTIN 13 // Specify the on which is your LED
 #endif
 
-// Define two tasks for Blink & AnalogRead.
-void TaskBlink( void *pvParameters );
-void TaskAnalogRead( void *pvParameters );
-TaskHandle_t analog_read_task_handle; // You can (don't have to) use this to be able to manipulate a task from somewhere else.
+void TaskReceiveManchester(void *pvParameters);
+void TaskSendManchester(void *pvParameters);
 
-// The setup function runs once when you press reset or power on the board.
+TaskHandle_t receive_manchester_handle;
+TaskHandle_t send_manchester_handle;
+
 void setup() {
-  // Initialize serial communication at 115200 bits per second:
   Serial.begin(115200);
-  // Set up two tasks to run independently.
-  uint32_t blink_delay = 1000; // Delay between changing state on LED pin
+
   xTaskCreate(
-    TaskBlink
-    ,  "Task Blink" // A name just for humans
-    ,  2048        // The stack size can be checked by calling `uxHighWaterMark = uxTaskGetStackHighWaterMark(NULL);`
-    ,  (void*) &blink_delay // Task parameter which can modify the task behavior. This must be passed as pointer to void.
-    ,  2  // Priority
-    ,  NULL // Task handle is not used here - simply pass NULL
-    );
+    TaskReceiveManchester,
+    "Receive Manchester",
+    2048,
+    NULL,
+    1,
+    receive_manchester_handle
+  );
 
-  // This variant of task creation can also specify on which core it will be run (only relevant for multi-core ESPs)
-  xTaskCreatePinnedToCore(
-    TaskAnalogRead
-    ,  "Analog Read"
-    ,  2048  // Stack size
-    ,  NULL  // When no parameter is used, simply pass NULL
-    ,  1  // Priority
-    ,  &analog_read_task_handle // With task handle we will be able to manipulate with this task.
-    ,  ARDUINO_RUNNING_CORE // Core on which the task will run
-    );
-
-  Serial.printf("Basic Multi Threading Arduino Example\n");
-  // Now the task scheduler, which takes over control of scheduling individual tasks, is automatically started.
+  xTaskCreate(
+    TaskSendManchester,
+    "Send Manchester",
+    2048, 
+    NULL,
+    2,
+    send_manchester_handle
+  )
 }
 
 void loop(){
-  if(analog_read_task_handle != NULL){ // Make sure that the task actually exists
+  if(receive_manchester_handle != NULL){ 
     delay(10000);
-    vTaskDelete(analog_read_task_handle); // Delete task
-    analog_read_task_handle = NULL; // prevent calling vTaskDelete on non-existing task
+    vTaskDelete(receive_manchester_handle); 
+    receive_manchester_handle = NULL; 
+  }
+
+  if(send_manchester_handle != NULL){ 
+    delay(10000);
+    vTaskDelete(send_manchester_handle); 
+    send_manchester_handle = NULL; 
   }
 }
+
+
 
 /*--------------------------------------------------*/
 /*---------------------- Tasks ---------------------*/
@@ -64,14 +61,6 @@ void loop(){
 
 void TaskBlink(void *pvParameters){  // This is a task.
   uint32_t blink_delay = *((uint32_t*)pvParameters);
-
-/*
-  Blink
-  Turns on an LED on for one second, then off for one second, repeatedly.
-    
-  If you want to know what pin the on-board LED is connected to on your ESP32 model, check
-  the Technical Specs of your board.
-*/
 
   // initialize digital LED_BUILTIN on pin 13 as an output.
   pinMode(LED_BUILTIN, OUTPUT);
@@ -94,15 +83,6 @@ void TaskAnalogRead(void *pvParameters){  // This is a task.
     analog_read_task_handle = NULL; // Prevent calling vTaskDelete on non-existing task
     vTaskDelete(NULL); // Delete this task
   }
-  
-/*
-  AnalogReadSerial
-  Reads an analog input on pin A3, prints the result to the serial monitor.
-  Graphical representation is available using serial plotter (Tools > Serial Plotter menu)
-  Attach the center pin of a potentiometer to pin A3, and the outside pins to +5V and ground.
-
-  This example code is in the public domain.
-*/
 
   for (;;){
     // read the input on analog pin:
@@ -111,4 +91,12 @@ void TaskAnalogRead(void *pvParameters){  // This is a task.
     Serial.println(sensorValue);
     delay(100); // 100ms delay
   }
+}
+
+void TaskReceiveManchester(void *pvParameters){
+
+}
+
+void TaskSendManchester(void *pvParameters){
+
 }
