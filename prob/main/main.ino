@@ -1,15 +1,7 @@
+#include <Manchester.h>
 
-#if CONFIG_FREERTOS_UNICORE
-#define ARDUINO_RUNNING_CORE 0
-#else
-#define ARDUINO_RUNNING_CORE 1
-#endif
-
-#define ANALOG_INPUT_PIN A0
-
-#ifndef LED_BUILTIN
-  #define LED_BUILTIN 13 // Specify the on which is your LED
-#endif
+#define TX_PIN 1
+#define RX_PIN 3
 
 void TaskReceiveManchester(void *pvParameters);
 void TaskSendManchester(void *pvParameters);
@@ -17,8 +9,11 @@ void TaskSendManchester(void *pvParameters);
 TaskHandle_t receive_manchester_handle;
 TaskHandle_t send_manchester_handle;
 
+
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
+  man.workAround1MhzTinyCore();
+  man.setupTransmit(TX_PIN, MAN_9600);
 
   xTaskCreate(
     TaskReceiveManchester,
@@ -98,5 +93,8 @@ void TaskReceiveManchester(void *pvParameters){
 }
 
 void TaskSendManchester(void *pvParameters){
+  (void) pvParameters;
+
+
 
 }
